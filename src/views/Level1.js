@@ -67,6 +67,8 @@ export default class Level1 extends Component {
     if (!this.state.value.trim()) return alert("Please Type somthing first!");
 
     this.setState({ value: "", wrongAnswer: "" });
+
+    this.checkMatched();
   };
 
   render() {
