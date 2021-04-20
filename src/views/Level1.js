@@ -1,10 +1,10 @@
 import React, { Component } from "react";
 import { Input, Button, Progress, Divider } from "antd";
+import { level1 } from "../datas";
 import { Link } from "react-router-dom";
 import { AudioOutlined } from "@ant-design/icons";
-import { level1 } from "../datas";
 
-export default class Level1 extends Component {
+class Level1 extends Component {
   state = {
     value: "",
     timeOut: false,
@@ -30,6 +30,12 @@ export default class Level1 extends Component {
     }, 1000);
   };
 
+  componentDidUpdate() {
+    if (this.state.timer === 0) {
+      clearInterval(this.interval);
+    }
+  }
+
   componentWillUnmount() {
     clearTimeout(this.timeout);
     clearInterval(this.interval);
@@ -37,38 +43,96 @@ export default class Level1 extends Component {
 
   randomTense = async () => {
     let TenseArray = ["simple", "past"];
-
-    let randomTense = TenseArray[Math.random() * TenseArray.length];
+    //We need to get one tense between simple and past randomly
+    let randomTense = await TenseArray[
+      Math.floor(Math.random() * TenseArray.length)
+    ];
     this.setState({ randomTense: randomTense });
   };
 
-  componentDidUpdate() {
-    if (this.state.timer === 0) {
-      clearInterval(this.interval);
-    }
-  }
-
   handleRestart = () => {
+    //1. set state  timer : 0
     this.setState({ timer: 10, timeOut: false, wrongAnswer: "" });
 
+    //2. trigger startTimeOut again
     this.startTimeOut();
   };
 
   handleChange = (event) => {
-    this.setState({ value: event.target.vaue });
+    this.setState({ value: event.target.value });
   };
 
   handleSubmit = (event) => {
     event.preventDefault();
 
     if (this.state.timeOut)
-      return alert("Please click restart button keep doing it");
+      return alert("Please click restart button to keep doing it");
 
-    if (!this.state.value.trim()) return alert("Please Type somthing first!");
+    if (!this.state.value.trim()) return alert("Please Type something first!");
 
     this.setState({ value: "", wrongAnswer: "" });
 
+    //we need to check if our answer is right or not
     this.checkMatched();
+  };
+
+  checkMatched = () => {
+    //we need to check whether our answer was right or not
+    //know Tense for the question
+    (this.state.randomTense === "simple"
+      ? level1[this.state.round].simple
+      : level1[this.state.round].past) === this.state.value
+      ? //true
+        this.setState(
+          { round: this.state.round + 1, timer: 10, wrongAnswer: "" },
+          () => {
+            this.randomTense();
+            //stop the setTimeout and start new setTimeout,  not for setInterval
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+              this.setState({ timeOut: true });
+            }, 10000);
+          }
+        )
+      : //false
+        this.setState(
+          {
+            wrongAnswer:
+              this.state.randomTense === "simple"
+                ? `${level1[this.state.round].simple}`
+                : `${level1[this.state.round].past}`,
+          },
+          () => {
+            this.setState({
+              round: this.state.round + 1,
+              timer: 10,
+              wrongAnswers: this.state.wrongAnswers.concat(
+                level1[this.state.round].voca
+              ),
+            });
+            this.randomTense();
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+              this.setState({ timeOut: true });
+            }, 10000);
+          }
+        );
+  };
+
+  handleRedirect = () => {
+    setTimeout(() => {
+      window.location.reload();
+    }, 10);
+  };
+
+  handleAudio = (event) => {
+    event.preventDefault();
+    var elm = event.target;
+    var audio = document.getElementById("audio");
+    var source = document.getElementById("audioSource");
+    source.src = elm.getAttribute("data-value");
+    audio.load(); //call this to just preload the audio without playing
+    audio.play(); //call this to play the song right away
   };
 
   render() {
@@ -201,3 +265,5 @@ export default class Level1 extends Component {
     );
   }
 }
+
+export default Level1;
